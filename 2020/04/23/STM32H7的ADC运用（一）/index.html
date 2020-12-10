@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <!-- title -->
+
+
+
+
+<!-- keywords -->
+
+
+
+
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="author" content="slhuan">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="slhuan">
+    
+    <meta name="keywords" content="hexo,hexo-theme,hexo-blog">
+    
+    <meta name="description" content="学而不思则罔">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>STM32H7的ADC运用（一） · undefined</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/slhuan_blog/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s infinite;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href="/slhuan_blog/css/style.css?v=20180824" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="stylesheet" href="/slhuan_blog/css/mobile.css?v=20180824" media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href="/slhuan_blog/assets/favicon.ico">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script">
+    <link rel="preload" href="/slhuan_blog/scripts/main.js" as="script">
+    <link rel="preload" as="font" href="/slhuan_blog/font/Oswald-Regular.ttf" crossorigin="">
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin="">
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/slhuan_blog/">半壶纱</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">STM32H7的ADC运用（一）</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href="/slhuan_blog/">半壶纱</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style="
+
+
+
+
+
+
+
+height:50vh;
+">
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/slhuan_blog/intro/f.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            STM32H7的ADC运用（一）
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class="post-intro-tags">
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags="STM32">STM32</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>字数统计: <span class="post-count word-count">3.2k</span>阅读时长: <span class="post-count reading-time">16 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2020/04/23</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/slhuan_blog/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/slhuan_blog/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <h1 id="1-概述"><a href="#1-概述" class="headerlink" title="1. 概述"></a>1. 概述</h1><p>&emsp;&emsp;本篇讲的是STM32H7xx(本人使用的是H743和H750)的ADC应用，包括了配合DMA使用的方案和外部触发的方案。另外，现目前ST主在推HAL库的使用，所以本篇也会大概讲一点HAL的一些关于ADC方面的使用。</p>
+<h1 id="2-环境"><a href="#2-环境" class="headerlink" title="2. 环境"></a>2. 环境</h1><p>&emsp;&emsp;I. 软件环境<br>&emsp;&emsp;&emsp;编译器：Keil<br>&emsp;&emsp;&emsp;数据处理：matlab<br>&emsp;&emsp;II. 硬件环境<br>&emsp;&emsp;&emsp;NUCLEO-H743ZI开发板</p>
+<h1 id="3-方案"><a href="#3-方案" class="headerlink" title="3. 方案"></a>3. 方案</h1><p>&emsp;&emsp;使用外部引脚上升沿触发ADC，使STM32H743的3路真ADC同时开始采集，并且使用DMA将采集到的数据搬移到内存中；之后使用ETH将数据发送到上位机，通过Matlab将数据还原并画出波形。  </p>
+<h1 id="4-系统设计"><a href="#4-系统设计" class="headerlink" title="4. 系统设计"></a>4. 系统设计</h1><h2 id="4-1-时钟设计"><a href="#4-1-时钟设计" class="headerlink" title="4.1 时钟设计"></a>4.1 时钟设计</h2><h3 id="4-1-1-系统时钟"><a href="#4-1-1-系统时钟" class="headerlink" title="4.1.1 系统时钟"></a>4.1.1 系统时钟</h3><p>&emsp;&emsp;根据手册，CPU的时钟最高可以设置到400MHz，我们就按400MHz时钟配置假设外部时钟是25MHz：  </p>
+<p><pre><br>    __HAL_RCC_PLL_PLLSOURCE_CONFIG(RCC_PLLSOURCE_HSE);<br>    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;<br>    RCC_OscInitStruct.HSEState = RCC_HSE_ON;<br>    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;<br>    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;<br>    RCC_OscInitStruct.PLL.PLLM = 2;<br>    RCC_OscInitStruct.PLL.PLLN = 64;<br>    RCC_OscInitStruct.PLL.PLLP = 2;<br>    RCC_OscInitStruct.PLL.PLLQ = 8;<br>    RCC_OscInitStruct.PLL.PLLR = 2;<br>    RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_2;<br>    RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;<br>    RCC_OscInitStruct.PLL.PLLFRACN = 0;<br>    if (HAL_RCC_OscConfig(&amp;RCC_OscInitStruct) != HAL_OK)<br>    {<br>        Error_Handler();<br>    }<br></pre> </p>
+<h3 id="4-1-2-ADC时钟"><a href="#4-1-2-ADC时钟" class="headerlink" title="4.1.2 ADC时钟"></a>4.1.2 ADC时钟</h3><p>&emsp;&emsp;STM32H743的ADC时钟最高为36MHz；这里我使用的是32MHz，选用的时钟源为内部高速时钟64MHz二分频：  </p>
+<p><pre>ADC时钟选择<br>    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC | RCC_PERIPHCLK_CKPER;<br>    PeriphClkInitStruct.CkperClockSelection = RCC_CLKPSOURCE_HSI;<br>    PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_CLKP;<br>    if (HAL_RCCEx_PeriphCLKConfig(&amp;PeriphClkInitStruct) != HAL_OK)<br>    {<br>        Error_Handler();<br>    }<br></pre> </p>
+<p><pre>ADC时钟配置<br>    hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV2;<br>    hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV2;<br>    hadc3.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV2;<br></pre></p>
+<h2 id="4-2-外设配置"><a href="#4-2-外设配置" class="headerlink" title="4.2 外设配置"></a>4.2 外设配置</h2><h3 id="4-2-1-ADC配置"><a href="#4-2-1-ADC配置" class="headerlink" title="4.2.1 ADC配置"></a>4.2.1 ADC配置</h3><p>&emsp;&emsp;HAL库下ADC的初始化主要使用到的函数有如下几个：</p>
+<p><pre>ADC初始化使用到的HAL库函数<br>    HAL_StatusTypeDef HAL_ADC_Init(ADC_HandleTypeDef <em>hadc)<br>    HAL_StatusTypeDef HAL_ADC_ConfigChannel(ADC_HandleTypeDef </em>hadc, ADC_ChannelConfTypeDef <em>sConfig)<br>    void HAL_ADC_MspInit(ADC_HandleTypeDef</em> adcHandle)<br></pre><br><code>HAL_StatusTypeDef HAL_ADC_Init(ADC_HandleTypeDef *hadc)</code>的作用是初始化ADC的一些列参数，如时钟、采样位数、模式、触发源等；<br><code>HAL_StatusTypeDef HAL_ADC_ConfigChannel(ADC_HandleTypeDef *hadc, ADC_ChannelConfTypeDef *sConfig)</code>的作用是配置ADC的通道、序列采样周期、单端差分等；<br><code>HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)</code>此函数是在<code>HAL_ADC_Init</code>中被调用的，按照HAL库的惯例是在其中完成引脚、DMA的配置；<br>然后让我们来看看HAL库下的ADC句柄<code>ADC_HandleTypeDef</code>的内容：  </p>
+<p><pre>ADC_HandleTypeDef<br>    typedef struct<br>    {<br>      ADC_TypeDef                   <em>Instance;              /</em>!&lt; Register base address <em>/<br>      ADC_InitTypeDef               Init;                   /</em>!&lt; ADC initialization parameters and regular conversions setting <em>/<br>      DMA_HandleTypeDef             </em>DMA_Handle;            /<em>!&lt; Pointer DMA Handler </em>/<br>      HAL_LockTypeDef               Lock;                   /<em>!&lt; ADC locking object </em>/<br>      <strong>IO uint32_t                 State;                  /<em>!&lt; ADC communication state (bitmap of ADC states) </em>/
+      </strong>IO uint32_t                 ErrorCode;              /<em>!&lt; ADC Error code </em>/<br>      ADC_InjectionConfigTypeDef    InjectionConfig ;       /<em>!&lt; ADC injected channel configuration build-up structure </em>/<br>    } ADC_HandleTypeDef;<br></pre><br>其中<code>*Instance</code>表示指向的ADC的基地址，在HAL库下，直接将其赋值为’ADC1/ADC2/ADC3’：</p>
+<p><pre><br>hadc1.Instance = ADC1;<br>hadc2.Instance = ADC2;<br>hadc3.Instance = ADC3;<br></pre><br>然后看看紧接着的<code>ADC_InitTypeDef               Init;</code>中的内容：</p>
+<p><pre>ADC_InitTypeDef<br>    typedef struct<br>    {<br>      uint32_t ClockPrescaler;        /<em>!&lt; Select ADC clock source (synchronous clock derived from APB clock or asynchronous clock derived from system clock or PLL (Refer to reference manual for list of clocks available)) and clock prescaler.<br>                                           This parameter can be a value of @ref ADC_HAL_EC_COMMON_CLOCK_SOURCE.<br>                                           Note: The ADC clock configuration is common to all ADC instances.<br>                                           Note: In case of usage of channels on injected group, ADC frequency should be lower than AHB clock frequency /4 for resolution 12 or 10 bits,<br>                                                 AHB clock frequency /3 for resolution 8 bits, AHB clock frequency /2 for resolution 6 bits.<br>                                           Note: In case of synchronous clock mode based on HCLK/1, the configuration must be enabled only<br>                                                 if the system clock has a 50% duty clock cycle (APB prescaler configured inside RCC<br>                                                 must be bypassed and PCLK clock must have 50% duty cycle). Refer to reference manual for details.<br>                                           Note: In case of usage of asynchronous clock, the selected clock must be preliminarily enabled at RCC top level.<br>                                           Note: This parameter can be modified only if all ADC instances are disabled. </em>/</pre></p>
+<pre><code>  uint32_t Resolution;            /*!&lt; Configure the ADC resolution.
+                                       This parameter can be a value of @ref ADC_HAL_EC_RESOLUTION */
+
+  uint32_t ScanConvMode;          /*!&lt; Configure the sequencer of ADC groups regular and injected.
+                                       This parameter can be associated to parameter &apos;DiscontinuousConvMode&apos; to have main sequence subdivided in successive parts.
+                                       If disabled: Conversion is performed in single mode (one channel converted, the one defined in rank 1).
+                                                    Parameters &apos;NbrOfConversion&apos; and &apos;InjectedNbrOfConversion&apos; are discarded (equivalent to set to 1).
+                                       If enabled:  Conversions are performed in sequence mode (multiple ranks defined by &apos;NbrOfConversion&apos; or &apos;InjectedNbrOfConversion&apos; and rank of each channel in sequencer).
+                                                    Scan direction is upward: from rank 1 to rank &apos;n&apos;.
+                                       This parameter can be a value of @ref ADC_Scan_mode */
+
+  uint32_t EOCSelection;          /*!&lt; Specify which EOC (End Of Conversion) flag is used for conversion by polling and interruption: end of unitary conversion or end of sequence conversions.
+                                       This parameter can be a value of @ref ADC_EOCSelection. */
+
+  FunctionalState LowPowerAutoWait; /*!&lt; Select the dynamic low power Auto Delay: new conversion start only when the previous
+                                       conversion (for ADC group regular) or previous sequence (for ADC group injected) has been retrieved by user software,
+                                       using function HAL_ADC_GetValue() or HAL_ADCEx_InjectedGetValue().
+                                       This feature automatically adapts the frequency of ADC conversions triggers to the speed of the system that reads the data. Moreover, this avoids risk of overrun
+                                       for low frequency applications.
+                                       This parameter can be set to ENABLE or DISABLE.
+                                       Note: Do not use with interruption or DMA (HAL_ADC_Start_IT(), HAL_ADC_Start_DMA()) since they clear immediately the EOC flag
+                                             to free the IRQ vector sequencer.
+                                             Do use with polling: 1. Start conversion with HAL_ADC_Start(), 2. Later on, when ADC conversion data is needed:
+                                             use HAL_ADC_PollForConversion() to ensure that conversion is completed and HAL_ADC_GetValue() to retrieve conversion result and trig another conversion start.
+                                             (in case of usage of ADC group injected, use the equivalent functions HAL_ADCExInjected_Start(), HAL_ADCEx_InjectedGetValue(), ...). */
+
+  FunctionalState ContinuousConvMode; /*!&lt; Specify whether the conversion is performed in single mode (one conversion) or continuous mode for ADC group regular,
+                                       after the first ADC conversion start trigger occurred (software start or external trigger).
+                                       This parameter can be set to ENABLE or DISABLE. */
+
+  uint32_t NbrOfConversion;       /*!&lt; Specify the number of ranks that will be converted within the regular group sequencer.
+                                       To use the regular group sequencer and convert several ranks, parameter &apos;ScanConvMode&apos; must be enabled.
+                                       This parameter must be a number between Min_Data = 1 and Max_Data = 16.
+                                       Note: This parameter must be modified when no conversion is on going on regular group (ADC disabled, or ADC enabled without
+                                       continuous mode or external trigger that could launch a conversion). */
+
+  FunctionalState DiscontinuousConvMode; /*!&lt; Specify whether the conversions sequence of ADC group regular is performed in Complete-sequence/Discontinuous-sequence
+                                       (main sequence subdivided in successive parts).
+                                       Discontinuous mode is used only if sequencer is enabled (parameter &apos;ScanConvMode&apos;). If sequencer is disabled, this parameter is discarded.
+                                       Discontinuous mode can be enabled only if continuous mode is disabled. If continuous mode is enabled, this parameter setting is discarded.
+                                       This parameter can be set to ENABLE or DISABLE. */
+
+  uint32_t NbrOfDiscConversion;   /*!&lt; Specifies the number of discontinuous conversions in which the main sequence of ADC group regular (parameter NbrOfConversion) will be subdivided.
+                                       If parameter &apos;DiscontinuousConvMode&apos; is disabled, this parameter is discarded.
+                                       This parameter must be a number between Min_Data = 1 and Max_Data = 8. */
+
+  uint32_t ExternalTrigConv;      /*!&lt; Select the external event source used to trigger ADC group regular conversion start.
+                                       If set to ADC_SOFTWARE_START, external triggers are disabled and software trigger is used instead.
+                                       This parameter can be a value of @ref ADC_regular_external_trigger_source.
+                                       Caution: external trigger source is common to all ADC instances. */
+
+  uint32_t ExternalTrigConvEdge;  /*!&lt; Select the external event edge used to trigger ADC group regular conversion start.
+                                       If trigger source is set to ADC_SOFTWARE_START, this parameter is discarded.
+                                       This parameter can be a value of @ref ADC_regular_external_trigger_edge */
+
+  uint32_t ConversionDataManagement; /*!&lt; Specifies whether the Data conversion data is managed: using the DMA (oneshot or circular), or stored in the DR register or transfered to DFSDM register.
+                                       Note: In continuous mode, DMA must be configured in circular mode. Otherwise an overrun will be triggered when DMA buffer maximum pointer is reached.
+                                       This parameter can be a value of @ref ADC_ConversionDataManagement.
+                                       Note: This parameter must be modified when no conversion is on going on both regular and injected groups
+                                       (ADC disabled, or ADC enabled without continuous mode or external trigger that could launch a conversion). */
+
+  uint32_t Overrun;               /*!&lt; Select the behavior in case of overrun: data overwritten or preserved (default).
+                                       This parameter applies to ADC group regular only.
+                                       This parameter can be a value of @ref ADC_HAL_EC_REG_OVR_DATA_BEHAVIOR.
+                                       Note: In case of overrun set to data preserved and usage with programming model with interruption (HAL_Start_IT()): ADC IRQ handler has to clear
+                                       end of conversion flags, this induces the release of the preserved data. If needed, this data can be saved in function
+                                       HAL_ADC_ConvCpltCallback(), placed in user program code (called before end of conversion flags clear).
+                                       Note: Error reporting with respect to the conversion mode:
+                                             - Usage with ADC conversion by polling for event or interruption: Error is reported only if overrun is set to data preserved. If overrun is set to data
+                                               overwritten, user can willingly not read all the converted data, this is not considered as an erroneous case.
+                                             - Usage with ADC conversion by DMA: Error is reported whatever overrun setting (DMA is expected to process all data from data register). */
+
+  uint32_t LeftBitShift;             /*!&lt; Configures the left shifting applied to the final result with or without oversampling.
+                                          This parameter can be a value of @ref ADCEx_Left_Bit_Shift */
+  FunctionalState OversamplingMode;       /*!&lt; Specify whether the oversampling feature is enabled or disabled.
+                                               This parameter can be set to ENABLE or DISABLE.
+                                               Note: This parameter can be modified only if there is no conversion is ongoing on ADC groups regular and injected */
+
+  ADC_OversamplingTypeDef Oversampling;   /*!&lt; Specify the Oversampling parameters.
+                                               Caution: this setting overwrites the previous oversampling configuration if oversampling is already enabled. */
+
+} ADC_InitTypeDef;
+</code></pre><p><br>这里面的参数就要按照自己的需求来定了，如下是我的设置：</p>
+<p><pre>ADC1/ADC2/ADC3的设置都是一致的<br>    hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV2;<br>    hadc1.Init.Resolution = ADC_RESOLUTION_12B;<br>    hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;<br>    hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;<br>    hadc1.Init.LowPowerAutoWait = DISABLE;<br>    hadc1.Init.ContinuousConvMode = ENABLE;<br>    hadc1.Init.NbrOfConversion = 1;<br>    hadc1.Init.DiscontinuousConvMode = DISABLE;<br>    hadc1.Init.NbrOfDiscConversion = 1;</pre></p>
+<pre><code>hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIG_EXT_IT11;
+hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
+
+hadc1.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DMA_ONESHOT;
+hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+hadc1.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
+hadc1.Init.OversamplingMode = DISABLE;
+</code></pre><p><br>从以上配置可以看到，我使用的是12bit有效位，连续采样，使用外部引脚上升沿触发，数据保存是使用DMA来搬移，如果出现数据覆盖，则保留上一次的舍弃当前次的采样数据；<br>这里对于ADC1和ADC2多说一句：STM32H7的ADC1/ADC2具有主从模式，如果使用其主从模式，则ADC1是主，ADC2是从，即触发了ADC1就触发了ADC2，关于ADC的主从模式我将单独开一张来讲解，我们这里使用的是ADC的独立模式：</p>
+<p><pre><br>    multimode.Mode = ADC_MODE_INDEPENDENT;<br>    if (HAL_ADCEx_MultiModeConfigChannel(&amp;hadc1, &amp;multimode) != HAL_OK)<br>    {<br>        return 1;<br>    }<br></pre><br>紧接着是ADC的通道设置:</p>
+<p><pre>ADC1<br>    sConfig.Channel = IF1_ADC_CHANNEL;<br>    sConfig.Rank = ADC_REGULAR_RANK_1;<br>    sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;<br>    sConfig.SingleDiff = ADC_DIFFERENTIAL_ENDED;<br>    sConfig.OffsetNumber = ADC_OFFSET_NONE;<br>    sConfig.Offset = 0;<br>    if (HAL_ADC_ConfigChannel(&amp;hadc1, &amp;sConfig) != HAL_OK)<br>    {<br>        return 1;<br>    }</pre></p>
+<p><br>这里只列举ADC1的通道设置，这里可以看到我选择的是差分模式，原因不能细说=-=，但是对于ADC的差分或者单端模式的区别很简单，百度下就知道了；通过以上的设置，已经可以计算出ADC的采样率了，<br>根据公式：<br>    <code>SR= Fadc / (（sample_bit/2+0.5）+ SamplingTime )</code><br>我们的采样率是<code>32MHz/(12/2+0.5+1.5)=4MHz</code>。  </p>
+<h3 id="4-2-2-DMA设置"><a href="#4-2-2-DMA设置" class="headerlink" title="4.2.2 DMA设置"></a>4.2.2 DMA设置</h3><p>&emsp;&emsp;此处只讲ADC的DMA配置。前面讲过ADC的DMA是在<code>void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)</code>完成配置的；另外，STM32H7的DMA已经没有为外设指定特定的通道，也就意味着用户可以随意使用DMA的任意通道来作为外设的数据搬移通道。具体的配置如下：</p>
+<p><pre><br>    hdma_adc1.Instance = DMA1_Stream1;<br>    hdma_adc1.Init.Request = DMA_REQUEST_ADC1;<br>    hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;<br>    hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;<br>    hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;<br>    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;<br>    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;<br>    hdma_adc1.Init.Mode = DMA_NORMAL;<br>    hdma_adc1.Init.Priority = DMA_PRIORITY_HIGH;<br>    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;<br>    if (HAL_DMA_Init(&amp;hdma_adc1) != HAL_OK)<br>    {<br>        //Error_Handler();<br>    }</pre></p>
+<pre><code>__HAL_LINKDMA(adcHandle,DMA_Handle,hdma_adc1);
+/* DMA1_Stream1_IRQn interrupt configuration */
+HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 0, 1);
+HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
+</code></pre><p><br>从上可知，我将DMA的设置为ADC请求，即ADC的DR寄存器有值则会触发DMA去搬移数据；搬移的数据大小是半字（16bits），并且还使能了中断。<br>&emsp;&emsp;对于中断，HAL库下基本不会在<code>IRQHandler()</code>做比较复杂操作，而是通过注册回调函数来完成中断需要完成的操作。来看看DMA的中断函数：</p>
+<p><pre><br>void DMA1_Stream1_IRQHandler(void)<br>{<br>    HAL_DMA_IRQHandler(&amp;hdma_adc1);<br>}<br></pre></p>
+<h2 id="4-3-ADC和DMA的启停和完成"><a href="#4-3-ADC和DMA的启停和完成" class="headerlink" title="4.3 ADC和DMA的启停和完成"></a>4.3 ADC和DMA的启停和完成</h2><h3 id="4-3-1-ADC的启停和完成"><a href="#4-3-1-ADC的启停和完成" class="headerlink" title="4.3.1 ADC的启停和完成"></a>4.3.1 ADC的启停和完成</h3><p>&emsp;&emsp;HAL库下的ADC有很多启动函数，其实现的功能各不相同，如下：</p>
+<p><pre></pre></p>
+<ol>
+<li>HAL_StatusTypeDef       HAL_ADC_Start(ADC_HandleTypeDef *hadc);  </li>
+<li><p>HAL_StatusTypeDef       HAL_ADC_Stop(ADC_HandleTypeDef *hadc);</p>
+</li>
+<li><p>HAL_StatusTypeDef       HAL_ADC_Start_IT(ADC_HandleTypeDef *hadc);</p>
+</li>
+<li><p>HAL_StatusTypeDef       HAL_ADC_Stop_IT(ADC_HandleTypeDef *hadc);</p>
+</li>
+<li><p>HAL_StatusTypeDef       HAL_ADC_Start_DMA(ADC_HandleTypeDef <em>hadc, uint32_t </em>pData, uint32_t Length);</p>
+</li>
+<li><p>HAL_StatusTypeDef       HAL_ADC_Stop_DMA(ADC_HandleTypeDef *hadc);</p>
+</li>
+<li><p>uint32_t                HAL_ADC_GetValue(ADC_HandleTypeDef <em>hadc);<br><br>我使用的ADC和DMA搭配的方案，所以肯定选择的是`HAL_ADC_Start_DMA(ADC_HandleTypeDef </em>hadc, uint32_t <em>pData, uint32_t Length)`，参数的意思我就不解释了，我想说的是这个函数内部的一些问题。我跟进这个函数的内部发现了这么一句：<br><pre><br> /</pre></em> Set the DMA transfer complete callback */<br> hadc-&gt;DMA_Handle-&gt;XferCpltCallback = ADC_DMAConvCplt;</p>
+<p> /<em> Set the DMA half transfer complete callback </em>/<br> hadc-&gt;DMA_Handle-&gt;XferHalfCpltCallback = ADC_DMAHalfConvCplt;<br><br>从这里就可以看出，ADC使用DMA来处理数据的时候，当Length个ADC数据搬移完成后，原来是通过注册了一个回调函数<code>ADC_DMAConvCplt</code>来做进一步处理的，那么这个回调函数又是怎么实现的呢？再次跟进去发现内部有这样一句：<br><code>HAL_ADC_ConvCpltCallback(hadc);</code><br>而<code>HAL_ADC_ConvCpltCallback(hadc);</code>在最原始的库函数中是这样写的：<br><pre><br>__weak void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef <em>hadc)<br>{<br>/</em> Prevent unused argument(s) compilation warning */<br>UNUSED(hadc);</pre></p>
+<p>/* NOTE : This function should not be modified. When the callback is needed,</p>
+<pre><code>function HAL_ADC_ConvCpltCallback must be implemented in the user file.
+</code></pre><p><em>/<br>}<br><br>从ST的注释可以理解到，如果我们要使用这个回调函数，则需要在外面自己的工程里重构此函数。<br>&emsp;&emsp;从上诉给的几个函数可以看到，ADC、DMA、回调函数之间的联系是通过一个ADC的句柄`ADC_HandleTypeDef </em>hadc`来完成连接的，这样就可以使每个函数知道当前来的是哪一个ADC，需要进行怎样的处理。</p>
+<h3 id="4-3-2-DMA的启动"><a href="#4-3-2-DMA的启动" class="headerlink" title="4.3.2 DMA的启动"></a>4.3.2 DMA的启动</h3><p>&emsp;&emsp;DMA的启动相对就比较简单了，分为普通启动和中断启动，函数如下：</p>
+<pre></pre></li>
+<li>HAL_StatusTypeDef HAL_DMA_Start (DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);</li>
+<li>HAL_StatusTypeDef HAL_DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);<br><br>因为我们是依靠ADC的DR寄存器去触发DMA的，所以只能使用DMA的中断模式，而源地址自然就是ADC的DR寄存器，像这样：<br><code>HAL_DMA_Start_IT(&amp;hdma_adc1, (uint32_t)(&amp;ADC1-&gt;DR), (uint32_t)addrADC1, length);</code><h3 id="4-3-3-ADC和DMA的联合"><a href="#4-3-3-ADC和DMA的联合" class="headerlink" title="4.3.3 ADC和DMA的联合"></a>4.3.3 ADC和DMA的联合</h3>&emsp;&emsp;从DMA的启动可看到，DMA启动并不会启动ADC；所以当启动了DMA之后还需要启动ADC：<br><pre><br>void StartAdc(uint32_t <em>addrADC1, uint32_t </em>addrADC2, uint32_t <em>addrADC3, uint16_t length)<br>{<br> HAL_DMA_Start_IT(&amp;hdma_adc1, (uint32_t)(&amp;ADC1-&gt;DR), (uint32_t)addrADC1, length);<br> HAL_DMA_Start_IT(&amp;hdma_adc2, (uint32_t)(&amp;ADC2-&gt;DR), (uint32_t)addrADC2, length);<br> HAL_DMA_Start_IT(&amp;hdma_adc3, (uint32_t)(&amp;ADC3-&gt;DR), (uint32_t)addrADC3, length);<br>}<br>StartAdc((uint32_t</em>)&amp;gaAdcData[0][0], (uint32_t<em>)&amp;gaAdcData[1][0], (uint32_t</em>)&amp;gaAdcData[2][0], SAMPLE_NUMS);<br>HAL_ADC_Start(&amp;hadc1);<br>HAL_ADC_Start(&amp;hadc2);<br>HAL_ADC_Start(&amp;hadc3);<br></pre><h1 id="5-总结"><a href="#5-总结" class="headerlink" title="5. 总结"></a>5. 总结</h1>&emsp;&emsp;本篇只是讲了ADC的配置和数据流的处理。具体的配置还需要根据具体的需求来设计。下一篇将会将ADC的多重模式。</li>
+</ol>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>原文作者：<a href="https://gitee.com/slhhuan.gitee.io/slhuan_blog">slhuan</a>
+            </p><p>原文链接：<a href="https://gitee.com/slhhuan.gitee.io/slhuan_blog/2020/04/23/STM32H7的ADC运用（一）/">https://gitee.com/slhhuan.gitee.io/slhuan_blog/2020/04/23/STM32H7的ADC运用（一）/</a>
+            </p><p>发表日期：<a href="https://gitee.com/slhhuan.gitee.io/slhuan_blog/2020/04/23/STM32H7的ADC运用（一）/">April 23rd 2020, 9:19:03 am</a>
+            </p><p>更新日期：<a href="https://gitee.com/slhhuan.gitee.io/slhuan_blog/2020/04/23/STM32H7的ADC运用（一）/">May 5th 2020, 7:54:24 pm</a>
+            </p><p>版权声明：本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+                <div class="nextSlogan">Next Post</div>
+                <a href="/slhuan_blog/2020/04/23/STM32H7的ADC运用（二）/" title="STM32H7的ADC运用（二）">
+                    <div class="nextTitle">STM32H7的ADC运用（二）</div>
+                </a>
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href="/slhuan_blog/2019/01/26/STM32H750的启动引导注意事项/" title="STM32H750的启动引导注意事项">
+                    <div class="prevTitle">STM32H750的启动引导注意事项</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!-- partial('_partial/comment/changyan') -->
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:953172510@qq.com" class="iconfont-archer email" title="email"></a>
+            
+        
+    
+        
+    
+        
+            
+                <span class="iconfont-archer wechat" title="wechat">
+                  
+                  <img class="profile-qr" src="/slhuan_blog/slhhuan">
+                </span>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-概述"><span class="toc-number">1.</span> <span class="toc-text">1. 概述</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-环境"><span class="toc-number">2.</span> <span class="toc-text">2. 环境</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-方案"><span class="toc-number">3.</span> <span class="toc-text">3. 方案</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#4-系统设计"><span class="toc-number">4.</span> <span class="toc-text">4. 系统设计</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#4-1-时钟设计"><span class="toc-number">4.1.</span> <span class="toc-text">4.1 时钟设计</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-1-系统时钟"><span class="toc-number">4.1.1.</span> <span class="toc-text">4.1.1 系统时钟</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-2-ADC时钟"><span class="toc-number">4.1.2.</span> <span class="toc-text">4.1.2 ADC时钟</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-2-外设配置"><span class="toc-number">4.2.</span> <span class="toc-text">4.2 外设配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-1-ADC配置"><span class="toc-number">4.2.1.</span> <span class="toc-text">4.2.1 ADC配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-2-DMA设置"><span class="toc-number">4.2.2.</span> <span class="toc-text">4.2.2 DMA设置</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-3-ADC和DMA的启停和完成"><span class="toc-number">4.3.</span> <span class="toc-text">4.3 ADC和DMA的启停和完成</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-1-ADC的启停和完成"><span class="toc-number">4.3.1.</span> <span class="toc-text">4.3.1 ADC的启停和完成</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-2-DMA的启动"><span class="toc-number">4.3.2.</span> <span class="toc-text">4.3.2 DMA的启动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-3-ADC和DMA的联合"><span class="toc-number">4.3.3.</span> <span class="toc-text">4.3.3 ADC和DMA的联合</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#5-总结"><span class="toc-number">5.</span> <span class="toc-text">5. 总结</span></a></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 5
+        </div>
+        <!-- search  -->
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2020 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/03</span><a class="archive-post-title" href="/slhuan_blog/2020/05/03/嵌入式Linux环境搭建/">嵌入式Linux环境搭建</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/03</span><a class="archive-post-title" href="/slhuan_blog/2020/05/03/STM32F103ZE LCD(ILI9488)/">STM32F103ZE LCD(ILI9488) 显示和8002A触摸驱动学习</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/23</span><a class="archive-post-title" href="/slhuan_blog/2020/04/23/STM32H7的ADC运用（二）/">STM32H7的ADC运用（二）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/23</span><a class="archive-post-title" href="/slhuan_blog/2020/04/23/STM32H7的ADC运用（一）/">STM32H7的ADC运用（一）</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2019 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/26</span><a class="archive-post-title" href="/slhuan_blog/2019/01/26/STM32H750的启动引导注意事项/">STM32H750的启动引导注意事项</a>
+        </li>
+    
+    </ul></div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="STM32"><span class="iconfont-archer">&#xe606;</span>STM32</span>
+    
+        <span class="sidebar-tag-name" data-tags="嵌入式Linux"><span class="iconfont-archer">&#xe606;</span>嵌入式Linux</span>
+    
+        <span class="sidebar-tag-name" data-tags="单片机"><span class="iconfont-archer">&#xe606;</span>单片机</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br>
+    1、请确保node版本大于6.2<br>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="STM32"><span class="iconfont-archer">&#xe60a;</span>STM32</span>
+    
+        <span class="sidebar-category-name" data-categories="嵌入式Linux"><span class="iconfont-archer">&#xe60a;</span>嵌入式Linux</span>
+    
+        <span class="sidebar-category-name" data-categories="STM32F103"><span class="iconfont-archer">&#xe60a;</span>STM32F103</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/slhuan_blog/",
+        author: "slhuan"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/slhuan_blog/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/slhuan_blog/scripts/main.js"></script>
+    <!-- algolia -->
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/slhuan_blog/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+
